@@ -1,0 +1,39 @@
+{
+  "name": "zecpaid",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "24.x" },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.mjs",
+    "build": "vite build",
+    "test": "node --test tests/*.test.mjs",
+    "qa": "node scripts/qa.mjs"
+  },
+  "dependencies": {
+    "@pump-fun/pump-sdk": "4.3.1",
+    "@solana/web3.js": "1.99.0",
+    "@vercel/functions": "3.10.1",
+    "bs58": "6.0.0",
+    "express": "5.2.1",
+    "helmet": "8.3.0",
+    "lucide-react": "0.468.0",
+    "pg": "8.23.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.5.2",
+    "playwright": "1.58.2",
+    "vite": "7.3.7"
+  },
+  "optionalDependencies": { "bufferutil": "4.1.0" },
+  "overrides": {
+    "bigint-buffer": "npm:@trufflesuite/bigint-buffer@1.1.10",
+    "uuid": "11.1.1",
+    "toml": "5.0.1",
+    "stream-json": "3.7.0",
+    "zod": "4.6.6"
+  }
+}

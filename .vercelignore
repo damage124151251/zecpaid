@@ -1,0 +1,8 @@
+node_modules/
+/dist/
+/brand-sources/
+/test-results/
+/data/
+/tests/
+/scripts/
+.env*
