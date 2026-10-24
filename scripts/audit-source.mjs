@@ -3,7 +3,7 @@ import { readFileSync, lstatSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
 const local = parseEnv(readFileSync('.env.local', 'utf8'));
-const names = ['DATABASE_URL','CUSTODY_ENCRYPTION_KEY','X_CLIENT_ID','X_CLIENT_SECRET','X_BEARER_TOKEN'];
+const names = ['DATABASE_URL','CUSTODY_ENCRYPTION_KEY','X_CLIENT_ID','X_CLIENT_SECRET','X_BEARER_TOKEN','CRON_SECRET'];
 const secrets = names.filter(n => local[n]?.length > 8).map(n => [n, local[n]]);
 if (local.DATABASE_URL) secrets.push(['DATABASE_PASSWORD', decodeURIComponent(new URL(local.DATABASE_URL).password)]);
 const findings = [];

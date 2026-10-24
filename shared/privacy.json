@@ -1,0 +1,8 @@
+{
+  "program": "9fhQBbumKEFuXtMBDw8AaQyAjCorLGJQiS3skWZdQyQD",
+  "relayer": "https://api3.privacycash.org",
+  "feeRecipient": "97rSMQUukMDjA7PYErccyx7ZxbHvSDaeXp2ig5BwSrTf",
+  "lookupTable": "HEN49U2ySJ85Vc78qprSW9y6mFDhs1NczRxyppNHjofe",
+  "maxClaimGrossRaw": "100000000",
+  "maxDepositSolCostLamports": "5000000"
+}

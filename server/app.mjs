@@ -7,6 +7,9 @@ import { AppError, random, hash, pkce, equal, keyReady, origin, cookie, cookies,
 import { xProvider, rememberAccount, collectorWallet } from './accounts.mjs';
 import { balances } from './chain.mjs';
 import { prepareLaunch, confirmLaunch, reconcile, signingEnabled } from './launches.mjs';
+import { feeOverview, prepareFeeCollection } from './fees.mjs';
+import { moneyEnabled, requireMoney, operation, publicOperation, confirmFeeOperation, reconcileFeeOperation } from './money.mjs';
+import { runPrivacyWorker, prepareClaim, approveClaim, reconcileClaim, resumeClaim, cancelClaim } from './privacy.mjs';
 import project from '../shared/project.json' with { type: 'json' };
 export function createApp(options = {}) {
   const app = express(), provider = options.provider || xProvider();
@@ -35,7 +38,9 @@ export function createApp(options = {}) {
   const oauthReady = () => Boolean(process.env.X_CLIENT_ID && process.env.X_CLIENT_SECRET && keyReady());
   app.get('/api/status', route(async (req, res) => {
     let storage = true; try { await db(); } catch { storage = false; }
-    res.json({ ...project, storage, oauthReady: oauthReady() && storage, lookupReady: Boolean(process.env.X_BEARER_TOKEN) && storage, vaultReady: keyReady() && storage, launchReady: signingEnabled() && oauthReady() && storage && Boolean(process.env.X_BEARER_TOKEN), privatePayoutReady: false, feeSweepsReady: false, callbackUrl: `${origin(req)}/api/auth/callback`, canonicalUrl: origin(req), checkedAt: Date.now() });
+    let privateRailConfigured=false,fundedLaunchVerified=false;
+    if(storage){const d=await db(),check=await d.get('SELECT body FROM service_checks WHERE name=$1','privacy-runtime');if(check){try{const c=JSON.parse(check.body);privateRailConfigured=c.providerReachable&&c.wasm&&c.circuits&&c.deployment===(process.env.VERCEL_URL||'local');}catch{}}fundedLaunchVerified=Boolean(await d.get("SELECT id FROM plans WHERE status='finalized' LIMIT 1"));}
+    res.json({ ...project, storage, oauthReady: oauthReady() && storage, lookupReady: Boolean(process.env.X_BEARER_TOKEN) && storage, vaultReady: keyReady() && storage, launchReady: signingEnabled() && oauthReady() && storage && Boolean(process.env.X_BEARER_TOKEN), fundedLaunchVerified, feeCollectionConfigured: true, feeCollectionReady: moneyEnabled() && storage && keyReady(), privateRailConfigured, privatePayoutReady: privateRailConfigured && moneyEnabled(), feeSweepsReady: moneyEnabled(), autoFeeCollectionReady: false, callbackUrl: `${origin(req)}/api/auth/callback`, canonicalUrl: origin(req), checkedAt: Date.now() });
   }));
   app.get('/api/auth/start', route(async (req, res) => {
     if (req.get('host') !== new URL(origin(req)).host) return res.redirect(`${origin(req)}/api/auth/start`);
@@ -115,7 +120,22 @@ export function createApp(options = {}) {
   }
   app.get('/api/balances/me', route(async (req, res) => { const a = await session(req), address = await collectorWallet(await db(), a.x_id); res.json(await observed(address)); }));
   app.get('/api/treasury', route(async (req, res) => res.json(await observed(project.treasury))));
-  app.post('/api/claims', route(async (req, res) => { await session(req); throw new AppError('The private payout relay has not passed funded acceptance. No withdrawal was created and no funds moved.', 503); }));
+  app.get('/api/fees', route(async(req,res)=>{const a=await session(req);res.json(await feeOverview(await db(),a.x_id));}));
+  app.post('/api/fees/:id/prepare', route(async(req,res)=>{const a=await session(req);res.json(await prepareFeeCollection(await db(),a.x_id,req.params.id));}));
+  app.get('/api/operations', route(async(req,res)=>{const a=await session(req),rows=await(await db()).all('SELECT * FROM money_operations WHERE owner=$1 ORDER BY created DESC LIMIT 50',a.x_id);res.json(rows.map(publicOperation));}));
+  app.post('/api/claims/prepare', route(async(req,res)=>{const a=await session(req);res.json(await prepareClaim(await db(),a.x_id,req.body));}));
+  app.post('/api/claims', route(async(req,res)=>{const a=await session(req);requireMoney(a.x_id);res.json(await prepareClaim(await db(),a.x_id,req.body));}));
+  app.post('/api/operations/:id/approve', route(async(req,res)=>{const a=await session(req),d=await db(),row=await operation(d,a.x_id,req.params.id);res.json(row.kind==='fees'?await confirmFeeOperation(d,a.x_id,row.id):await approveClaim(d,a.x_id,row.id));}));
+  app.post('/api/operations/:id/check', route(async(req,res)=>{const a=await session(req),d=await db(),row=await operation(d,a.x_id,req.params.id);res.json(row.kind==='fees'?await reconcileFeeOperation(d,a.x_id,row.id):await reconcileClaim(d,a.x_id,row.id));}));
+  app.post('/api/operations/:id/resume', route(async(req,res)=>{const a=await session(req);res.json(await resumeClaim(await db(),a.x_id,req.params.id));}));
+  app.post('/api/operations/:id/cancel', route(async(req,res)=>{const a=await session(req);res.json(await cancelClaim(await db(),a.x_id,req.params.id));}));
+  app.post('/api/operator/check-privacy', route(async(req,res)=>{
+    const token=req.get('authorization')?.replace(/^Bearer /,'');
+    if(!process.env.CRON_SECRET||!token||!equal(hash(token),hash(process.env.CRON_SECRET)))throw new AppError('Operator authorization required.',403);
+    const result={...await runPrivacyWorker('health'),deployment:process.env.VERCEL_URL||'local'};
+    await(await db()).run('INSERT INTO service_checks(name,body,updated) VALUES($1,$2,$3) ON CONFLICT(name) DO UPDATE SET body=excluded.body,updated=excluded.updated','privacy-runtime',JSON.stringify(result),Date.now());
+    res.json(result);
+  }));
   app.get('/api/nominations', route(async (req, res) => res.json(await (await db()).all('SELECT id,repo,name,description,reason,created FROM nominations ORDER BY created DESC LIMIT 50'))));
   app.post('/api/nominations', route(async (req, res) => {
     const a = await session(req), reason = text(req.body.reason, 'Reason', 30, 1000);

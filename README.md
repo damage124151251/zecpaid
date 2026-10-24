@@ -4,9 +4,10 @@ A single-screen web app for ZEC-paired token projects supporting X accounts.
 The beneficiary is pinned by the permanent numeric X ID. One encrypted managed
 collector wallet is reused for that account, including after a username change.
 
-- Website: https://zecpaid.vercel.app
+- Website: https://www.zecpaid.app
 - X: https://x.com/zecpaid
 - Source: https://github.com/damage124151251/zecpaid
+- Main token: `9u2TiMWgGw67Rnjazrj5cXUnLhdNKV6GPKAqs4w4pump`
 
 ## Run
 
@@ -40,11 +41,23 @@ on Solana, simulates costs and stores signed bytes before broadcasting. Only a
 matching successful finalized transaction enters the launch registry. There is
 no initial token purchase in the launch transaction.
 
-Financial signing is not enabled in the current release. Automated creator-fee
-sweeps and the private payout workflow remain unfinished. Do not interpret the
-interface, configured API credentials or passing fixture tests as evidence of a
-funded launch or payment. No main token, funded grant or completed payout is
-invented. The main developer fund is separate from beneficiary-owned funds.
+Manual creator-fee collection prepares curve/pool sweeps and creator-vault
+collection. The private-claim implementation reviews net ZEC, provider fees,
+deposit funding and SOL limits, then checkpoints the signed deposit and
+withdrawal proof before relay. Pending responses are reconciled against exact
+finalized receipts. A wallet cannot approve overlapping money operations.
+
+Financial execution remains gated pending funded end-to-end acceptance and
+security review. The main token's launch alone does not validate this pipeline.
+Automated fee scheduling is not implemented. Passing fixture tests or a runtime
+health check is not evidence of a successful funded launch, proof, deposit or
+withdrawal. The main developer fund is separate from beneficiary-owned funds.
+
+`node --env-file=.env.local scripts/check-private-service.mjs <origin>` runs a
+protected read-only provider/WASM/circuit availability check. It never signs or
+sends money. Keep `CRON_SECRET` server-side. `FINANCE_TEST_X_ID` restricts an
+operator-reviewed acceptance release to one permanent X ID. Neither deployment
+nor this check enables financial execution.
 
 Bridged ZEC on Solana is not native shielded Zcash. Public token creation,
 trading, account funding and fee-wallet balances do not become confidential by

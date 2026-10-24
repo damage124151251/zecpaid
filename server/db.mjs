@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,owner TEXT NOT NULL,reci
 CREATE INDEX IF NOT EXISTS projects_owner ON projects(owner);
 CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,owner TEXT NOT NULL,serialized TEXT NOT NULL,message_hash TEXT NOT NULL,mint TEXT NOT NULL,last_height BIGINT NOT NULL,review TEXT NOT NULL,status TEXT NOT NULL,signature TEXT UNIQUE,signed TEXT,expires BIGINT NOT NULL,error TEXT,created BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS nominations(id TEXT PRIMARY KEY,owner TEXT NOT NULL,repo TEXT NOT NULL UNIQUE,name TEXT NOT NULL,description TEXT NOT NULL,reason TEXT NOT NULL,created BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS money_operations(id TEXT PRIMARY KEY,owner TEXT NOT NULL,kind TEXT NOT NULL,subject TEXT NOT NULL,status TEXT NOT NULL,review TEXT NOT NULL,serialized TEXT,message_hash TEXT,signed TEXT,signature TEXT UNIQUE,last_height BIGINT,proof_hash TEXT UNIQUE,proof_data TEXT,withdrawal_signature TEXT UNIQUE,lease TEXT,lease_until BIGINT,error TEXT,result TEXT,expires BIGINT NOT NULL,created BIGINT NOT NULL,updated BIGINT NOT NULL);
+CREATE INDEX IF NOT EXISTS money_owner ON money_operations(owner);
+CREATE TABLE IF NOT EXISTS privacy_cache(owner TEXT PRIMARY KEY,encrypted TEXT NOT NULL,updated BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS service_checks(name TEXT PRIMARY KEY,body TEXT NOT NULL,updated BIGINT NOT NULL);
 `;
 export async function openDatabase(filename) {
   const scope = new AsyncLocalStorage(); let query, tx, close;

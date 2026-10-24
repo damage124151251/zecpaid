@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import project from '../shared/project.json' with {type:'json'};
 const url = process.env.QA_URL || 'http://127.0.0.1:5278';
 const output = new URL('../test-results/', import.meta.url);
 await mkdir(output, { recursive: true });
@@ -29,7 +30,7 @@ try {
     page.on('pageerror', e => result.errors.push(e.message));
     await page.addInitScript(() => sessionStorage.setItem('zecpaid-intro-v2', '1'));
     await page.goto(url); await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(700);
-    assert.equal(await page.locator('.header-contract strong').innerText(), 'SOON');
+    assert.equal(await page.locator('.header-contract strong').innerText(),project.mainToken ? `${project.mainToken.slice(0,6)}…${project.mainToken.slice(-5)}` : 'SOON');
     assert.equal(await page.locator('.header-contract .token-square').count(), 0);
     assert.equal(await page.getByRole('button', { name: 'Replay intro' }).count(), 0);
     assert.equal(await page.getByRole('link', { name: 'ZecPaid on X', exact: true }).first().getAttribute('href'), 'https://x.com/zecpaid');

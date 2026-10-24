@@ -6,3 +6,5 @@ node_modules/
 /tests/
 /scripts/
 .env*
+.agents/
+skills-lock.json

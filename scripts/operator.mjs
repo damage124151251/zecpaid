@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 const envFile = resolve('.env.local');
 const backup = resolve(homedir(), '.codex/private/zecpaid/vault-master.json');
-const ownKeys = ['DATABASE_URL','PUBLIC_URL','CUSTODY_ENCRYPTION_KEY','X_CLIENT_ID','X_CLIENT_SECRET','X_BEARER_TOKEN','SOLANA_RPC_URL','ENABLE_LAUNCH'];
+const ownKeys = ['DATABASE_URL','PUBLIC_URL','CUSTODY_ENCRYPTION_KEY','X_CLIENT_ID','X_CLIENT_SECRET','X_BEARER_TOKEN','SOLANA_RPC_URL','ENABLE_LAUNCH','CRON_SECRET','MONEY_EXECUTION_ENABLED','FINANCE_TEST_X_ID'];
 async function readEnv() { try { return parseEnv(await readFile(envFile, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return {}; throw e; } }
 async function store(env) {
   const lines = ownKeys.filter(k => env[k] !== undefined).map(k => `${k}=${JSON.stringify(env[k])}`);
@@ -29,6 +29,8 @@ async function initialize() {
   env.PUBLIC_URL ||= 'http://127.0.0.1:5278';
   env.SOLANA_RPC_URL ||= 'https://api.mainnet-beta.solana.com';
   env.ENABLE_LAUNCH ||= 'false';
+  env.CRON_SECRET ||= randomBytes(32).toString('base64url');
+  env.MONEY_EXECUTION_ENABLED ||= 'disabled';
   for (const k of ['X_CLIENT_ID','X_CLIENT_SECRET','X_BEARER_TOKEN']) env[k] ||= '';
   await store(env);
   console.log('ZecPaid vault initialized. Key backed up locally with restricted file access. No key was printed.');
@@ -81,5 +83,5 @@ if (mode === 'init') await initialize();
 else if (mode === 'push') await push(process.argv.slice(3));
 else if (mode === 'serve') await serve();
 else if (mode === 'url') { const env = await readEnv(); env.PUBLIC_URL = new URL(process.argv[3]).origin; await store(env); console.log('PUBLIC_URL updated locally.'); }
-else if (mode === 'status') { const env = await readEnv(); console.log(JSON.stringify(Object.fromEntries(ownKeys.map(k => [k, Boolean(env[k])])), null, 2)); }
+else if (mode === 'status') { const env = await readEnv(); console.log(JSON.stringify(Object.fromEntries(ownKeys.map(k => [k, k === 'ENABLE_LAUNCH' ? env[k] === 'true' : k === 'MONEY_EXECUTION_ENABLED' ? env[k] === 'reviewed-and-funded' : Boolean(env[k])])), null, 2)); }
 else throw Error('Use init, serve, status, url <origin>, or push <variable names>.');

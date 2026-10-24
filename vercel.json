@@ -2,10 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "functions": { "api/index.mjs": { "maxDuration": 60 } },
+  "functions": { "api/index.mjs": { "maxDuration": 300, "includeFiles": "{server/**,shared/**,node_modules/privacycash/circuit2/**,node_modules/@lightprotocol/hasher.rs/**}" } },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/((?!api|brand|fonts|assets).*)", "destination": "/index.html" }
+    { "source": "/((?!api|brand|fonts|assets|media|downloads).*)", "destination": "/index.html" }
   ],
   "headers": [{ "source": "/(.*)", "headers": [
     { "key": "X-Content-Type-Options", "value": "nosniff" },
